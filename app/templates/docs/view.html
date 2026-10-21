@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.title }}{% endblock %}
+
+{% block content %}
+<section class="card wide">
+  <h1>{{ doc.title }}</h1>
+  <p class="muted">{{ "Publiczny" if doc.is_public else "Wewnętrzny" }} · autor: {{ doc.owner_name or "—" }}</p>
+  <p style="white-space: pre-wrap">{{ doc.body }}</p>
+  <p>
+    <a class="btn" href="{{ url_for('docs.index') }}">← Lista</a>
+    {% if can('docs.edit_own') and doc.owner_id == g.user.id %}
+      <a class="btn" href="{{ url_for('docs.edit', doc_id=doc.id) }}">Edytuj</a>
+    {% endif %}
+  </p>
+</section>
+{% endblock %}

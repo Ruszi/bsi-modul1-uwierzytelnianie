@@ -1,0 +1,60 @@
+/* ===== Kolory i podstawy ===== */
+:root {
+  --bg: #f4f5f7; --surface: #fff; --text: #1d2330; --muted: #677085; --border: #dfe2e8;
+  --primary: #2952cc; --ok: #1e7a46; --ok-bg: #e3f4ea; --bad: #b42318; --bad-bg: #fdecea; --info-bg: #e8eefc;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.5 system-ui, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+
+/* ===== Górny pasek ===== */
+.topbar { background: #1d2330; color: #fff; padding: .7rem 1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.topbar a { color: #cfd5e3; text-decoration: none; }
+.brand { font-weight: 650; color: #fff !important; }
+.who { margin-left: auto; display: flex; gap: .75rem; align-items: center; }
+.who form { margin: 0; }
+
+/* ===== Treść i karty ===== */
+.container { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; max-width: 440px; margin: 2rem auto; }
+.card.wide { max-width: 680px; }
+
+/* ===== Formularze ===== */
+label { display: block; font-weight: 550; margin-bottom: .9rem; }
+input, select, textarea { display: block; width: 100%; margin-top: .3rem; padding: .55rem .7rem; font: inherit; border: 1px solid var(--border); border-radius: 8px; }
+.btn { display: inline-block; padding: .5rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: #fff; font: inherit; cursor: pointer; text-decoration: none; color: var(--text); }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; width: 100%; }
+
+/* ===== Komunikaty ===== */
+.alert { padding: .75rem 1rem; border-radius: 8px; margin-bottom: 1rem; }
+.alert-error { background: var(--bad-bg); color: var(--bad); }
+.alert-success { background: var(--ok-bg); color: var(--ok); }
+.alert-info { background: var(--info-bg); color: #1f3d99; }
+.muted { color: var(--muted); }
+
+/* ===== Menu, tabele, nagłówek strony ===== */
+nav { display: flex; gap: 1rem; }
+.page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.page-head h1 { margin: 0; }
+.btn-primary-sm { background: var(--primary); border-color: var(--primary); color: #fff; }
+.table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.table th, .table td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--border); }
+.table th { font-size: .8rem; text-transform: uppercase; color: var(--muted); }
+label.check { display: flex; gap: .5rem; align-items: center; font-weight: 400; }
+label.check input { width: auto; margin: 0; }
+
+
+/* ===== Panel administratora ===== */
+.actions { display: flex; gap: .3rem; flex-wrap: wrap; }
+.actions form { margin: 0; }
+.btn-sm { padding: .25rem .6rem; font-size: .85rem; }
+.btn-danger { color: var(--bad); border-color: #f2c4bf; }
+.pill { display: inline-block; font-size: .8rem; padding: .1rem .55rem; border-radius: 999px; background: var(--bg); color: var(--muted); }
+.pill-ok { background: var(--ok-bg); color: var(--ok); }
+.pill-warn { background: #fdf1d8; color: #8a5a00; }
+.pill-bad { background: var(--bad-bg); color: var(--bad); }
+.otp { font-family: Consolas, monospace; font-size: 1.6rem; letter-spacing: .1rem; background: var(--bg); border: 1px dashed #b9bfcc; border-radius: 8px; padding: 1rem; }
+
+/* ===== TOTP ===== */
+.code-input { font-size: 1.4rem; letter-spacing: .3rem; text-align: center; }
+.qr { display: block; margin: 1rem auto; width: 210px; height: 210px; }
+code { font-family: Consolas, monospace; background: var(--bg); padding: .1rem .35rem; border-radius: 4px; word-break: break-all; }

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Pulpit{% endblock %}
+
+{% block content %}
+<section class="card wide">
+  <h1>Witaj, {{ g.user.full_name }}</h1>
+  <p>Login: <strong>{{ g.user.login }}</strong></p>
+  <p>Rola: <strong>{{ g.user.role_name }}</strong></p>
+    <p>Uprawnienia roli:</p>
+  <ul>
+    {% for p in g.permissions|sort %}<li><code>{{ p }}</code></li>{% else %}<li>brak</li>{% endfor %}
+  </ul>
+  <p class="muted">Sesja wygaśnie po {{ g.idle_seconds // 60 }} min bezczynności.</p>
+</section>
+{% endblock %}

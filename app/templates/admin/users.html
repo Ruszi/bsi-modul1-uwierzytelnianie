@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Użytkownicy{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Użytkownicy</h1>
+  {% if can('users.manage') %}<a class="btn btn-primary-sm" href="{{ url_for('admin.user_new') }}">+ Dodaj użytkownika</a>{% endif %}
+</div>
+
+<table class="table">
+  <thead>
+    <tr><th>Login</th><th>Imię i nazwisko</th><th>Rola</th><th>Status</th><th>2FA</th><th>Akcje</th></tr>
+  </thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td><strong>{{ u.login }}</strong>{% if u.is_system %} <span class="pill">stałe</span>{% endif %}</td>
+      <td>{{ u.full_name }}</td>
+      <td>{{ u.role_name }}</td>
+      <td>
+        {% if u.is_blocked %}<span class="pill pill-bad">zablokowane</span>
+        {% elif u.one_time_expires_at %}<span class="pill pill-warn">hasło jednorazowe do {{ u.one_time_expires_at[:16].replace("T", " ") }} UTC</span>
+        {% else %}<span class="pill pill-ok">aktywne</span>{% endif %}
+      </td>
+      <td>{{ "tak" if u.totp_enabled else "—" }}</td>
+      <td class="actions">
+        {% if can('users.manage') %}
+          <a class="btn btn-sm" href="{{ url_for('admin.user_edit', user_id=u.id) }}">Edytuj</a>
+
+          {% if u.id != g.user.id %}
+          <!-- data-confirm = okienko "Czy na pewno?" (obsługa w app.js) -->
+          <form method="post" action="{{ url_for('admin.user_reset_password', user_id=u.id) }}"
+                data-confirm="Nadać nowe hasło jednorazowe dla {{ u.login }}?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm" type="submit">Reset hasła</button>
+          </form>
+          {% endif %}
+
+          {% if u.totp_enabled %}
+          <form method="post" action="{{ url_for('admin.user_reset_2fa', user_id=u.id) }}"
+                data-confirm="Wyłączyć 2FA dla {{ u.login }}?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm" type="submit">Reset 2FA</button>
+          </form>
+          {% endif %}
+
+          {% if not u.is_system and u.id != g.user.id %}
+            {% if u.is_blocked %}
+            <form method="post" action="{{ url_for('admin.user_unblock', user_id=u.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm" type="submit">Odblokuj</button>
+            </form>
+            {% else %}
+            <form method="post" action="{{ url_for('admin.user_block', user_id=u.id) }}"
+                  data-confirm="Zablokować konto {{ u.login }}?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm" type="submit">Zablokuj</button>
+            </form>
+            {% endif %}
+            <form method="post" action="{{ url_for('admin.user_delete', user_id=u.id) }}"
+                  data-confirm="Usunąć trwale konto {{ u.login }}?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-danger" type="submit">Usuń</button>
+            </form>
+          {% endif %}
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

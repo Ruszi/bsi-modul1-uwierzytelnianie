@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edycja dokumentu" if doc else "Nowy dokument" }}{% endblock %}
+
+{% block content %}
+<section class="card wide">
+  <h1>{{ "Edycja dokumentu" if doc else "Nowy dokument" }}</h1>
+  {% if errors %}
+    <div class="alert alert-error"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>
+  {% endif %}
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Tytuł <input type="text" name="title" value="{{ form.title }}" required maxlength="200"></label>
+    <label>Treść <textarea name="body" rows="8" required>{{ form.body }}</textarea></label>
+    <label class="check">
+      <input type="checkbox" name="is_public" {% if form.is_public %}checked{% endif %}>
+      Dokument publiczny (widoczny także dla Gości)
+    </label>
+    <button class="btn btn-primary" type="submit">Zapisz</button>
+  </form>
+</section>
+{% endblock %}

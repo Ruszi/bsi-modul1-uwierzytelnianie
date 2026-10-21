@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} {{ title }}{% endblock %}
+
+{% block content %}
+<section class="card" style="text-align: center">
+  <p style="font-size: 3.5rem; font-weight: 800; color: var(--bad); margin: 0">{{ code }}</p>
+  <h1>{{ title }}</h1>
+  <p class="muted">{{ message }}</p>
+  <a class="btn" href="{{ url_for('main.index') }}">Wróć na pulpit</a>
+</section>
+{% endblock %}

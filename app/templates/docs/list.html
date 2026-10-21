@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Dokumenty{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Dokumenty</h1>
+  <!-- przycisk tylko dla ról z docs.create -->
+  {% if can('docs.create') %}<a class="btn btn-primary-sm" href="{{ url_for('docs.new') }}">+ Nowy dokument</a>{% endif %}
+</div>
+{% if not can('docs.read_all') %}<p class="muted">Widzisz wyłącznie dokumenty publiczne.</p>{% endif %}
+
+<table class="table">
+  <thead><tr><th>Tytuł</th><th>Widoczność</th><th>Autor</th><th>Aktualizacja</th><th></th></tr></thead>
+  <tbody>
+  {% for d in docs %}
+    <tr>
+      <td><a href="{{ url_for('docs.view', doc_id=d.id) }}">{{ d.title }}</a></td>
+      <td>{{ "publiczny" if d.is_public else "wewnętrzny" }}</td>
+      <td>{{ d.owner_name or "—" }}</td>
+      <td>{{ d.updated_at[:16].replace("T", " ") }} UTC</td>
+      <!-- "Edytuj" tylko przy własnych dokumentach -->
+      <td>{% if can('docs.edit_own') and d.owner_id == g.user.id %}<a href="{{ url_for('docs.edit', doc_id=d.id) }}">Edytuj</a>{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">Brak dokumentów.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

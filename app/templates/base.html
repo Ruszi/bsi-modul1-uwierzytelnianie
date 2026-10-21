@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- block title = miejsce na tytuł; każda strona wpisze tu swój -->
+  <title>{% block title %}{% endblock %} · Konta i uprawnienia</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body{% if g.user %} data-idle-seconds="{{ g.idle_seconds }}" data-timeout-url="{{ url_for('auth.login', timeout=1) }}"{% endif %}>
+<header class="topbar">
+  <a class="brand" href="/">🔐 Konta i uprawnienia</a>
+    {% if g.user %}
+  <nav>
+    <a href="{{ url_for('main.index') }}">Pulpit</a>
+    <!-- link tylko dla ról z uprawnieniem (wygoda – ochrona jest na serwerze) -->
+    {% if can('docs.read_public') %}<a href="{{ url_for('docs.index') }}">Dokumenty</a>{% endif %}
+        {% if can('users.view') %}<a href="{{ url_for('admin.users') }}">Użytkownicy</a>{% endif %}
+    {% if can('settings.manage') %}<a href="{{ url_for('admin.settings') }}">Ustawienia</a>{% endif %}
+
+  </nav>
+  {% endif %}
+    {% if g.user %}
+  <div class="who">
+    <span>{{ g.user.login }} ({{ g.user.role_name }})</span>
+    <span id="idle-timer" class="muted"></span>   <!-- licznik do wylogowania -->
+    <!-- Wylogowanie to formularz POST z tokenem CSRF, a nie zwykły link -->
+    <a href="{{ url_for('account.change_password') }}">Zmień hasło</a>
+        <a href="{{ url_for('account.twofa') }}">2FA</a>
+    <form method="post" action="{{ url_for('auth.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn" type="submit">Wyloguj</button>
+    </form>
+  </div>
+  {% endif %}
+</header>
+
+<main class="container">
+  <!-- Komunikaty z flash(), np. "Login lub hasło niepoprawne" -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- block content = miejsce na treść konkretnej strony -->
+  {% block content %}{% endblock %}
+</main>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

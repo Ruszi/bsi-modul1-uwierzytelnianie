@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edycja konta" if user else "Nowy użytkownik" }}{% endblock %}
+
+{% block content %}
+<section class="card wide">
+  <h1>{{ "Edycja konta " ~ user.login if user else "Nowy użytkownik" }}</h1>
+  {% if errors %}
+    <div class="alert alert-error"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>
+  {% endif %}
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <!-- loginu nie da się zmienić po utworzeniu konta -->
+    <label>Login
+      <input type="text" name="login" value="{{ form.login }}" {% if user %}disabled{% else %}required{% endif %}>
+    </label>
+    <label>Imię i nazwisko
+      <input type="text" name="full_name" value="{{ form.full_name }}" required maxlength="100">
+    </label>
+    <label>Rola
+      <select name="role_id" required>
+        <option value="">— wybierz —</option>
+        {% for r in roles %}
+          <option value="{{ r.id }}" {% if form.role_id == r.id|string %}selected{% endif %}>{{ r.name }} – {{ r.description }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% if not user %}
+      <p class="muted">Po utworzeniu konta zostanie wygenerowane hasło jednorazowe (14 znaków, ważne 24 h).</p>
+    {% endif %}
+    <button class="btn btn-primary" type="submit">{{ "Zapisz" if user else "Utwórz konto" }}</button>
+  </form>
+</section>
+{% endblock %}

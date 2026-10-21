@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Weryfikacja dwuetapowa{% endblock %}
+
+{% block content %}
+<section class="card wide">
+  <h1>Weryfikacja dwuetapowa (TOTP)</h1>
+
+  {% if g.user.totp_enabled %}
+    <!-- ===== 2FA WŁĄCZONE ===== -->
+    <div class="alert alert-success">Weryfikacja dwuetapowa jest włączona. Przy logowaniu, po haśle, wymagany jest kod z telefonu.</div>
+    <h2>Wyłączanie</h2>
+    <form method="post" action="{{ url_for('account.twofa_disable') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Hasło <input type="password" name="password" autocomplete="current-password" required></label>
+      <label>Aktualny kod z aplikacji
+        <input class="code-input" type="text" name="code" inputmode="numeric" maxlength="7" autocomplete="one-time-code" required>
+      </label>
+      <button class="btn btn-danger" type="submit">Wyłącz 2FA</button>
+    </form>
+
+  {% elif qr %}
+    <!-- ===== KONFIGURACJA: kod QR ===== -->
+    <ol>
+      <li>Otwórz aplikację uwierzytelniającą na telefonie i zeskanuj kod QR.</li>
+      <li>Jeśli skanowanie nie działa, wpisz klucz ręcznie: <code>{{ g.user.totp_secret }}</code></li>
+      <li>Wpisz 6-cyfrowy kod z telefonu, aby potwierdzić.</li>
+    </ol>
+    <img class="qr" src="{{ qr }}" alt="Kod QR do konfiguracji TOTP">
+    <form method="post" action="{{ url_for('account.twofa_confirm') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Kod z aplikacji
+        <input class="code-input" type="text" name="code" inputmode="numeric" maxlength="7" autocomplete="one-time-code" autofocus required>
+      </label>
+      <button class="btn btn-primary" type="submit">Potwierdź i włącz</button>
+    </form>
+    <form method="post" action="{{ url_for('account.twofa_cancel') }}" style="margin-top: 1rem">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn" type="submit">Anuluj</button>
+    </form>
+
+  {% else %}
+    <!-- ===== 2FA WYŁĄCZONE ===== -->
+    <p>Weryfikacja dwuetapowa dodaje drugi składnik uwierzytelniania – <strong>coś, co masz</strong>
+       (telefon z aplikacją) – obok <strong>czegoś, co wiesz</strong> (hasło).
+       Samo hasło nie wystarczy wtedy do zalogowania.</p>
+    <form method="post" action="{{ url_for('account.twofa_start') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-primary" type="submit">Włącz weryfikację dwuetapową</button>
+    </form>
+  {% endif %}
+</section>
+{% endblock %}

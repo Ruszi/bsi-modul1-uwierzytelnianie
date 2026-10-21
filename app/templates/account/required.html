@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Wymagana zmiana hasła{% endblock %}
+
+{% block content %}
+<section class="card wide">
+  <h1>Ustaw nowe hasło</h1>
+
+  <!-- Powód wymuszonej zmiany -->
+  {% if reason == "first" %}
+    <div class="alert alert-info">Logujesz się hasłem nadanym przez administratora. Przed dalszą pracą ustaw własne hasło.</div>
+  {% else %}
+    <div class="alert alert-info">Ważność Twojego hasła upłynęła. Ustaw nowe hasło.</div>
+  {% endif %}
+
+  <!-- Lista błędów polityki haseł -->
+  {% if errors %}
+    <div class="alert alert-error"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>
+  {% endif %}
+
+  <p class="muted">
+    <strong>Polityka haseł:</strong> co najmniej {{ policy.min_length }} znaków (maks. 64).
+    Wielkie litery, cyfry i znaki specjalne nie są wymagane – najlepsza jest długa fraza, np. kilka słów ze spacjami.
+    Hasło musi różnić się od poprzednich.
+    {% if policy.hibp %}Hasło zostanie sprawdzone w bazie wycieków Have I Been Pwned.{% endif %}
+  </p>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Nowe hasło
+      <input type="password" name="new_password" autocomplete="new-password" required>
+    </label>
+    <label>Powtórz nowe hasło
+      <input type="password" name="new_password2" autocomplete="new-password" required>
+    </label>
+    <button class="btn btn-primary" type="submit">Zapisz hasło</button>
+  </form>
+</section>
+{% endblock %}

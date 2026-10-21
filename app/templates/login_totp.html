@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Weryfikacja dwuetapowa{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h1>Weryfikacja dwuetapowa</h1>
+  <p class="muted">Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej na telefonie.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Kod weryfikacyjny
+      <input class="code-input" type="text" name="code" inputmode="numeric"
+             autocomplete="one-time-code" maxlength="7" autofocus required>
+    </label>
+    <button class="btn btn-primary" type="submit">Potwierdź</button>
+  </form>
+  <!-- Rezygnacja = usunięcie sesji 'mfa' -->
+  <form method="post" action="{{ url_for('auth.logout') }}" style="margin-top: 1rem">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn" type="submit">Anuluj logowanie</button>
+  </form>
+</section>
+{% endblock %}

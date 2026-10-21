@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Ustawienia bezpieczeństwa{% endblock %}
+
+{% block content %}
+<section class="card wide">
+  <h1>Ustawienia bezpieczeństwa</h1>
+  {% if errors %}
+    <div class="alert alert-error"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>
+  {% endif %}
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <h2>Polityka haseł</h2>
+    <label>Minimalna długość hasła (domyślnie 12)
+      <input type="number" name="min_length" min="8" max="64" value="{{ s.min_length }}" required>
+    </label>
+    <label class="check">
+      <input type="checkbox" name="hibp_enabled" {% if s.hibp_enabled %}checked{% endif %}>
+      Sprawdzaj hasła w bazie wycieków Have I Been Pwned (k-anonimowość)
+    </label>
+    <label>Ważność hasła w dniach (0 = bez wygasania)
+      <input type="number" name="password_max_age_days" min="0" max="3650" value="{{ s.password_max_age_days }}" required>
+    </label>
+    <p class="muted">NIST SP 800-63B nie zaleca okresowej zmiany haseł – wymuszaj ją tylko przy podejrzeniu wycieku.</p>
+
+    <h2>Sesja</h2>
+    <label>Wylogowanie po bezczynności (minuty)
+      <input type="number" name="session_idle_minutes" min="1" max="240" value="{{ s.session_idle_minutes }}" required>
+    </label>
+
+    <button class="btn btn-primary" type="submit">Zapisz ustawienia</button>
+  </form>
+</section>
+{% endblock %}
