@@ -1,5 +1,7 @@
 -- Usuwanie starych tabel 
 -- tabele które bedą odwoływać się do innych 
+DROP TABLE IF EXISTS login_attempts;
+DROP TABLE IF EXISTS captcha_challenges;
 DROP TABLE IF EXISTS documents;
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS password_history;
@@ -49,6 +51,8 @@ CREATE TABLE users (
     totp_secret          TEXT,                                 -- sekret 2FA (etap 9)
     totp_enabled         INTEGER NOT NULL DEFAULT 0,           -- 1 = 2FA włączone
     totp_last_step       INTEGER,                              -- ostatnio użyty kod TOTP (blokuje ponowne użycie)
+    failed_logins        INTEGER NOT NULL DEFAULT 0,           -- MODUŁ 2: licznik błędnych haseł z rzędu
+    locked_until         TEXT,                                 -- MODUŁ 2: blokada czasowa (15 min) do tej chwili
     created_at           TEXT NOT NULL                         -- data utworzenia konta
 );
 
@@ -90,3 +94,22 @@ CREATE TABLE documents (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+
+-- ===== MODUŁ 2: ochrona przed botami =====
+
+-- Wyzwania CAPTCHA: odpowiedź jest TYLKO na serwerze, wyzwanie jednorazowe i z terminem ważności
+CREATE TABLE captcha_challenges (
+    id         TEXT PRIMARY KEY,          -- losowy identyfikator wysyłany w formularzu
+    answer     TEXT NOT NULL,             -- poprawna odpowiedź (cyfry)
+    expires_at TEXT NOT NULL              -- po tym czasie wyzwanie jest nieważne
+);
+
+-- Rejestr prób logowania (do limitu prób z jednego IP i do raportu bota)
+CREATE TABLE login_attempts (
+    id         INTEGER PRIMARY KEY,
+    ip         TEXT NOT NULL,             -- adres IP klienta
+    login      TEXT NOT NULL,             -- wpisany login (także nieistniejący)
+    result     TEXT NOT NULL,             -- ok, bad_password, unknown_user, locked, captcha, honeypot, ip_limit, canary
+    created_at TEXT NOT NULL
+);
+CREATE INDEX idx_attempts_ip_time ON login_attempts (ip, created_at);

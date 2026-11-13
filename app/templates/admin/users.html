@@ -19,6 +19,7 @@
       <td>{{ u.role_name }}</td>
       <td>
         {% if u.is_blocked %}<span class="pill pill-bad">zablokowane</span>
+        {% elif u.locked_until and u.locked_until > now_iso %}<span class="pill pill-bad">blokada czasowa do {{ u.locked_until[11:16] }} UTC</span>
         {% elif u.one_time_expires_at %}<span class="pill pill-warn">hasło jednorazowe do {{ u.one_time_expires_at[:16].replace("T", " ") }} UTC</span>
         {% else %}<span class="pill pill-ok">aktywne</span>{% endif %}
       </td>
@@ -45,7 +46,8 @@
           {% endif %}
 
           {% if not u.is_system and u.id != g.user.id %}
-            {% if u.is_blocked %}
+            <!-- MODUŁ 2: "Odblokuj" także przy blokadzie czasowej po błędnych logowaniach -->
+            {% if u.is_blocked or (u.locked_until and u.locked_until > now_iso) %}
             <form method="post" action="{{ url_for('admin.user_unblock', user_id=u.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-sm" type="submit">Odblokuj</button>

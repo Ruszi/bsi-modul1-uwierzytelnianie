@@ -27,6 +27,16 @@
     <label>Wylogowanie po bezczynności (minuty)
       <input type="number" name="session_idle_minutes" min="1" max="240" value="{{ s.session_idle_minutes }}" required>
     </label>
+        <h2>Ochrona przed botami (moduł 2)</h2>
+    <label>Liczba błędnych haseł, po której konto jest blokowane na 15 minut
+      <input type="number" name="max_failed_logins" min="1" max="20" value="{{ s.max_failed_logins }}" required>
+    </label>
+    <label>Limit nieudanych prób logowania z jednego adresu IP (niezależnie od loginu)
+      <input type="number" name="ip_max_failed" min="3" max="1000" value="{{ s.ip_max_failed }}" required>
+    </label>
+    <label>…w oknie czasowym (minuty)
+      <input type="number" name="ip_window_minutes" min="1" max="1440" value="{{ s.ip_window_minutes }}" required>
+    </label>
 
     <button class="btn btn-primary" type="submit">Zapisz ustawienia</button>
   </form>

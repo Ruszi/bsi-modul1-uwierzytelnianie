@@ -16,6 +16,7 @@ MarkupSafe==3.0.4
 packaging==26.3
 pluggy==1.6.0
 pycparser==3.11
+pyfiglet==1.0.4
 Pygments==2.21.0
 PyOTP==2.10.0
 pytest==9.1.1

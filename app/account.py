@@ -7,6 +7,7 @@ from .db import get_db, get_setting
 from .security import (check_password_policy, new_totp_secret, totp_uri,
                        verify_password, verify_totp)
 from .users import previous_hashes, set_password
+from .protection import verify_recaptcha
 bp = Blueprint("account", __name__, url_prefix="/account")
 
 
@@ -40,8 +41,12 @@ def required_change():
 
     errors = []
     if request.method == "POST":
-        errors = _validate_new_password(g.user, request.form.get("new_password", ""),
-                                        request.form.get("new_password2", ""))
+        ok, captcha_error = verify_recaptcha()       # MODUŁ 2: najpierw reCAPTCHA
+        if not ok:
+            errors = [captcha_error]
+        else:
+            errors = _validate_new_password(g.user, request.form.get("new_password", ""),
+                                            request.form.get("new_password2", ""))
         if not errors:
             db = get_db()
             set_password(db, g.user["id"], request.form["new_password"],
@@ -58,7 +63,10 @@ def change_password():
     """ZWYKŁA zmiana hasła: wymaga podania obecnego hasła."""
     errors = []
     if request.method == "POST":
-        if not verify_password(g.user["password_hash"], request.form.get("old_password", "")):
+        ok, captcha_error = verify_recaptcha()       # MODUŁ 2: najpierw reCAPTCHA
+        if not ok:
+            errors.append(captcha_error)
+        elif not verify_password(g.user["password_hash"], request.form.get("old_password", "")):
             errors.append("Aktualne hasło jest niepoprawne.")
         else:
             errors = _validate_new_password(g.user, request.form.get("new_password", ""),

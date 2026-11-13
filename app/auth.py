@@ -10,6 +10,10 @@ from flask import (Blueprint, abort, current_app, flash, g, redirect, render_tem
 from .db import get_db, get_setting
 from .security import DUMMY_HASH, hash_password, needs_rehash, verify_password, verify_totp
 from .utils import from_iso, now, to_iso
+from .protection import (LOCKOUT_MINUTES, account_lock_remaining, check_captcha,
+                         honeypot_triggered, ip_block_remaining, is_canary_login, new_captcha,
+                         record_attempt, register_failed_login, reset_failed_logins,
+                         trigger_canary)
 
 bp = Blueprint("auth", __name__)
 
@@ -199,6 +203,14 @@ def permission_required(*codes):
 
 # ===================== WIDOKI =====================
 
+def _login_page(login_value="", status=200):
+    """Formularz logowania z NOWĄ, jednorazową CAPTCHA przy każdym wyświetleniu."""
+    captcha_id, captcha_art = new_captcha()
+    return render_template("login.html", login=login_value, captcha_id=captcha_id,
+                           captcha_art=captcha_art,
+                           lock_seconds=g.get("lock_seconds", 0)), status
+
+
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if g.user is not None:
@@ -207,40 +219,86 @@ def login():
         flash("Sesja wygasła z powodu bezczynności. Zaloguj się ponownie.", "info")
 
     if request.method == "GET":
-        return render_template("login.html", login="")
+        return _login_page()
 
     login_value = request.form.get("login", "").strip()
     password = request.form.get("password", "")
+
+    # --- 1. Limit prób z jednego adresu IP (ocena bardzo dobra: password spraying) ---
+    ip_wait = ip_block_remaining()
+    if ip_wait:
+        record_attempt(login_value, "ip_limit")
+        flash(f"Zbyt wiele nieudanych prób z Twojego adresu IP. "
+              f"Spróbuj ponownie za {ip_wait // 60 + 1} min.", "error")
+        return _login_page(login_value, 429)            # 429 Too Many Requests
+
+    # --- 2. Pułapka na boty: ukryte pole wypełnione = bot ---
+    if honeypot_triggered():
+        record_attempt(login_value, "honeypot")
+        flash(GENERIC_LOGIN_ERROR, "error")             # NIE zdradzamy botowi, że wpadł
+        return _login_page(login_value)
+
+    # --- 3. CAPTCHA (jednorazowa, ważna 2 minuty) ---
+    if not check_captcha(request.form.get("captcha_id"), request.form.get("captcha_answer")):
+        record_attempt(login_value, "captcha")
+        flash("Niepoprawny lub nieważny kod CAPTCHA. Przepisz nowy kod.", "error")
+        return _login_page(login_value)
+
+    # --- 4. Konto-pułapka (Canarytoken): każda próba = incydent ---
+    if is_canary_login(login_value):
+        verify_password(DUMMY_HASH, password)           # ten sam czas odpowiedzi
+        trigger_canary(login_value)
+        record_attempt(login_value, "canary")
+        flash(GENERIC_LOGIN_ERROR, "error")
+        return _login_page(login_value)
+
     db = get_db()
     user = db.execute("SELECT * FROM users WHERE login = ?", (login_value,)).fetchone()
 
-    # --- 1. Hasło (stały czas dzięki DUMMY_HASH) ---
+    # --- 5. Czasowa blokada konta po N błędnych próbach ---
+    if user is not None:
+        lock = account_lock_remaining(user)
+        if lock:
+            record_attempt(login_value, "locked")
+            g.lock_seconds = lock
+            flash("Konto jest czasowo zablokowane po zbyt wielu błędnych próbach logowania.", "error")
+            return _login_page(login_value)
+
+    # --- 6. Hasło (stały czas dzięki DUMMY_HASH) ---
     if user is None:
         verify_password(DUMMY_HASH, password)
-        password_ok = False
-    else:
-        password_ok = verify_password(user["password_hash"], password)
-
-    if not password_ok:
+        record_attempt(login_value, "unknown_user")
         flash(GENERIC_LOGIN_ERROR, "error")
-        return render_template("login.html", login=login_value)
+        return _login_page(login_value)
 
-    # --- 2. Sprawdzenia po poprawnym haśle ---
+    if not verify_password(user["password_hash"], password):
+        record_attempt(login_value, "bad_password")
+        if register_failed_login(user):                 # właśnie przekroczono limit
+            g.lock_seconds = LOCKOUT_MINUTES * 60
+            flash(f"Zbyt wiele błędnych prób. Konto zablokowano na {LOCKOUT_MINUTES} minut.", "error")
+        else:
+            flash(GENERIC_LOGIN_ERROR, "error")
+        return _login_page(login_value)
+
+    # --- 7. Hasło poprawne: zerujemy licznik błędów ---
+    reset_failed_logins(user["id"])
+    record_attempt(login_value, "ok")
+
     if user["is_blocked"]:
         flash("Konto jest zablokowane. Skontaktuj się z administratorem.", "error")
-        return render_template("login.html", login=login_value)
+        return _login_page(login_value)
 
     expires = from_iso(user["one_time_expires_at"])
     if expires and now() > expires:
         flash("Hasło jednorazowe wygasło. Poproś administratora o nowe.", "error")
-        return render_template("login.html", login=login_value)
+        return _login_page(login_value)
 
     if needs_rehash(user["password_hash"]):
         db.execute("UPDATE users SET password_hash = ? WHERE id = ?",
                    (hash_password(password), user["id"]))
         db.commit()
 
-    # --- 3. Sukces hasła ---
+    # --- 8. Sukces ---
     end_current_session()
     if user["totp_enabled"]:                        # 2FA włączone -> najpierw kod
         start_session(user["id"], "mfa")

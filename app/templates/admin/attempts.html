@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Próby logowania{% endblock %}
+
+{% block content %}
+<h1>Próby logowania</h1>
+
+<!-- Podsumowanie: ile razy zadziałało każde zabezpieczenie -->
+<table class="table" style="max-width: 420px; margin-bottom: 1.5rem">
+  <thead><tr><th>Wynik</th><th>Liczba</th></tr></thead>
+  <tbody>
+  {% for s in summary %}
+    <tr><td><span class="pill {{ 'pill-ok' if s.result == 'ok' else 'pill-bad' }}">{{ s.result }}</span></td><td>{{ s.n }}</td></tr>
+  {% else %}
+    <tr><td colspan="2" class="muted">Brak prób.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<p class="muted">
+  ok – poprawne hasło · bad_password – złe hasło · unknown_user – nieistniejący login ·
+  locked – konto czasowo zablokowane · captcha – zła/nieważna CAPTCHA · honeypot – wypełnione pole-pułapka ·
+  ip_limit – limit prób z adresu IP · canary – użycie konta-pułapki
+</p>
+
+<!-- Ostatnie 200 prób -->
+<table class="table">
+  <thead><tr><th>Czas (UTC)</th><th>Adres IP</th><th>Login</th><th>Wynik</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.created_at[:19].replace("T", " ") }}</td>
+      <td>{{ r.ip }}</td>
+      <td>{{ r.login }}</td>
+      <td><span class="pill {{ 'pill-ok' if r.result == 'ok' else 'pill-bad' }}">{{ r.result }}</span></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

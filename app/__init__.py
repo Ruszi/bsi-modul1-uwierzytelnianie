@@ -23,6 +23,14 @@ def create_app():
     app.config["DATABASE"] = os.path.join(app.instance_path, "app.sqlite")
     app.config["SECRET_KEY"] = _secret_key(app.instance_path)
 
+    # ===== MODUŁ 2: klucze i adresy z pliku instance/config.py (poza repozytorium!) =====
+    # Wartości domyślne reCAPTCHA to publiczne KLUCZE TESTOWE Google (zawsze akceptują token).
+    app.config["RECAPTCHA_SITE_KEY"] = "6LeIxAcTAAAAAJcZVRqyHh71UMIYGNQ_MXjiZKhI"
+    app.config["RECAPTCHA_SECRET_KEY"] = "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"
+    app.config["CANARY_LOGIN"] = "backup_admin"         # login konta-pułapki
+    app.config["CANARY_ACCOUNT_URL"] = None              # adres Canarytokena (Web bug)
+    app.config.from_pyfile("config.py", silent=True)     # nadpisuje powyższe, jeśli plik istnieje
+
     from . import db
     db.init_app(app)                     # zamykanie bazy + komendy init-db i reset-password
     csrf.init_app(app)                   # każdy formularz POST musi mieć poprawny csrf_token
@@ -50,11 +58,11 @@ def create_app():
         return render_template("error.html", code=404, title="Nie znaleziono",
                                message="Taka strona nie istnieje."), 404
 
-    # ===== Funkcja can('kod') dostępna w każdym szablonie =====
+    # ===== Zmienne dostępne w każdym szablonie =====
     @app.context_processor
     def inject_can():
         def can(code):
             return code in g.get("permissions", frozenset())
-        return {"can": can}
+        return {"can": can, "recaptcha_site_key": app.config["RECAPTCHA_SITE_KEY"]}
 
     return app

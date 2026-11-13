@@ -32,3 +32,18 @@ document.querySelectorAll("form[data-confirm]").forEach(function (form) {
     }
   });
 });
+
+// MODUŁ 2: odliczanie pozostałego czasu blokady konta na ekranie logowania
+(function () {
+  var el = document.getElementById("lock-timer");
+  if (!el) return;
+  var left = parseInt(el.getAttribute("data-seconds"), 10);
+  function tick() {
+    var m = Math.floor(left / 60), s = left % 60;
+    el.textContent = m + ":" + (s < 10 ? "0" : "") + s;
+    if (left <= 0) { el.textContent = "0:00 – możesz spróbować ponownie"; return; }
+    left -= 1;
+    setTimeout(tick, 1000);
+  }
+  tick();
+})();

@@ -17,6 +17,7 @@
     {% if can('docs.read_public') %}<a href="{{ url_for('docs.index') }}">Dokumenty</a>{% endif %}
         {% if can('users.view') %}<a href="{{ url_for('admin.users') }}">Użytkownicy</a>{% endif %}
     {% if can('settings.manage') %}<a href="{{ url_for('admin.settings') }}">Ustawienia</a>{% endif %}
+        {% if can('users.view') %}<a href="{{ url_for('admin.attempts') }}">Próby logowania</a>{% endif %}
 
   </nav>
   {% endif %}

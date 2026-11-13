@@ -7,6 +7,7 @@ from .auth import permission_required
 from .db import get_db, get_setting, set_setting
 from .security import MAX_LENGTH
 from .users import create_user, issue_one_time_password, kill_sessions
+from .utils import now, to_iso
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -50,7 +51,7 @@ def users():
         "SELECT u.*, r.name AS role_name FROM users u JOIN roles r ON r.id = u.role_id "
         "ORDER BY u.is_system DESC, u.login"
     ).fetchall()
-    return render_template("admin/users.html", users=rows)
+    return render_template("admin/users.html", users=rows, now_iso=to_iso(now()))
 
 
 # ===================== NOWE KONTO =====================
@@ -130,7 +131,9 @@ def user_block(user_id):
 def user_unblock(user_id):
     user = _get_user(user_id)
     db = get_db()
-    db.execute("UPDATE users SET is_blocked = 0 WHERE id = ?", (user_id,))
+        # odblokowanie zdejmuje też blokadę czasową po błędnych logowaniach (MODUŁ 2)
+    db.execute("UPDATE users SET is_blocked = 0, failed_logins = 0, locked_until = NULL WHERE id = ?",
+               (user_id,))
     db.commit()
     flash(f"Odblokowano konto {user['login']}.", "success")
     return redirect(url_for("admin.users"))
@@ -189,6 +192,10 @@ def settings():
             "min_length": (8, MAX_LENGTH, "Minimalna długość hasła"),
             "password_max_age_days": (0, 3650, "Ważność hasła"),
             "session_idle_minutes": (1, 240, "Czas bezczynności sesji"),
+                        # MODUŁ 2
+            "max_failed_logins": (1, 20, "Limit błędnych logowań na konto"),
+            "ip_max_failed": (3, 1000, "Limit nieudanych prób z jednego IP"),
+            "ip_window_minutes": (1, 1440, "Okno czasowe limitu IP"),
         }
         values = {}
         for key, (low, high, label) in limits.items():
@@ -212,5 +219,22 @@ def settings():
         "hibp_enabled": get_setting("hibp_enabled", bool),
         "password_max_age_days": get_setting("password_max_age_days", int),
         "session_idle_minutes": get_setting("session_idle_minutes", int),
+        "max_failed_logins": get_setting("max_failed_logins", int),
+        "ip_max_failed": get_setting("ip_max_failed", int),
+        "ip_window_minutes": get_setting("ip_window_minutes", int),
     }
     return render_template("admin/settings.html", s=current, errors=errors)
+
+
+# ===================== MODUŁ 2: REJESTR PRÓB LOGOWANIA =====================
+
+@bp.get("/attempts")
+@permission_required("users.view")
+def attempts():
+    """Ostatnie 200 prób logowania – widać, które zabezpieczenie zadziałało."""
+    db = get_db()
+    rows = db.execute("SELECT * FROM login_attempts ORDER BY id DESC LIMIT 200").fetchall()
+    summary = db.execute(
+        "SELECT result, COUNT(*) AS n FROM login_attempts GROUP BY result ORDER BY n DESC"
+    ).fetchall()
+    return render_template("admin/attempts.html", rows=rows, summary=summary)

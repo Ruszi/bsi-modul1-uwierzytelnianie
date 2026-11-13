@@ -2,9 +2,18 @@
 {% block title %}Logowanie{% endblock %}
 
 {% block content %}
-<section class="card">
+<section class="card wide">
   <h1>Logowanie</h1>
-  <form method="post">
+
+  {% if lock_seconds %}
+    <!-- Blokada konta: odliczanie pozostałego czasu (app.js) -->
+    <div class="alert alert-info">
+      Pozostały czas blokady: <strong id="lock-timer" data-seconds="{{ lock_seconds }}">
+      {{ lock_seconds // 60 }}:{{ "%02d" % (lock_seconds % 60) }}</strong>
+    </div>
+  {% endif %}
+
+  <form method="post" autocomplete="off">
     <!-- Ukryty token CSRF: dowód, że formularz pochodzi z naszej strony -->
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -17,7 +26,22 @@
       <input type="password" name="password" autocomplete="current-password" required>
     </label>
 
-    <button class="btn btn-primary" type="submit">Zaloguj</button>
+    <!-- POLE-PUŁAPKA: ukryte przed człowiekiem (CSS), bot je wypełni.
+         tabindex=-1 i autocomplete=off: klawiatura i menedżer haseł też go pomijają -->
+    <div class="hp" aria-hidden="true">
+      <label>Strona WWW
+        <input type="text" name="website" tabindex="-1" autocomplete="off">
+      </label>
+    </div>
+
+    <!-- CAPTCHA wariant 5: liczba narysowana znakami ASCII -->
+    <label>Przepisz cyfry z obrazka (ważne 2 minuty)</label>
+    <pre class="captcha" aria-label="Kod CAPTCHA w postaci ASCII art">{{ captcha_art }}</pre>
+    <input type="hidden" name="captcha_id" value="{{ captcha_id }}">
+    <input type="text" name="captcha_answer" inputmode="numeric" maxlength="10"
+           autocomplete="off" required placeholder="np. 12345">
+
+    <button class="btn btn-primary" type="submit" style="margin-top: 1rem">Zaloguj</button>
   </form>
 </section>
 {% endblock %}

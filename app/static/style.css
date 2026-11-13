@@ -58,3 +58,11 @@ label.check input { width: auto; margin: 0; }
 .code-input { font-size: 1.4rem; letter-spacing: .3rem; text-align: center; }
 .qr { display: block; margin: 1rem auto; width: 210px; height: 210px; }
 code { font-family: Consolas, monospace; background: var(--bg); padding: .1rem .35rem; border-radius: 4px; word-break: break-all; }
+
+/* ===== MODUŁ 2: CAPTCHA i pułapka ===== */
+.captcha { font-family: Consolas, "Courier New", monospace; font-size: 11px; line-height: 1.1;
+           background: #1d2330; color: #e8eefc; padding: .75rem; border-radius: 8px;
+           overflow-x: auto; margin: .3rem 0 .6rem; user-select: none; }
+/* Pole-pułapka: wysunięte poza ekran (nie display:none – część botów to sprawdza) */
+.hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+.g-recaptcha { margin: .5rem 0 1rem; }

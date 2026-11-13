@@ -38,8 +38,11 @@ DEFAULT_SETTINGS = {
     "hibp_enabled": "0",            # sprawdzanie w Have I Been Pwned: 0 = wyłączone
     "password_max_age_days": "0",   # ważność hasła w dniach, 0 = bez wygasania
     "session_idle_minutes": "10",   # wylogowanie po tylu minutach bezczynności
+    # --- MODUŁ 2 ---
+    "max_failed_logins": "5",       # po tylu błędnych hasłach z rzędu konto blokowane na 15 min
+    "ip_max_failed": "20",          # tyle nieudanych prób z jednego IP w oknie czasowym...
+    "ip_window_minutes": "15",      # ...w ciągu tylu minut -> IP zablokowane
 }
-
 
 # Wariant 5: 6 użytkowników testowych (login, imię i nazwisko, rola)
 TEST_USERS = [
@@ -174,9 +177,18 @@ def reset_password_command(login):
     password, expires = issue_one_time_password(db, user["id"])   # nowe hasło + wylogowanie
     db.commit()
     click.echo(f"Nowe hasło jednorazowe dla {login}: {password} (ważne do {expires:%Y-%m-%d %H:%M} UTC)")
+@click.command("unlock-all")
+def unlock_all_command():
+    """MODUŁ 2: zdejmuje wszystkie blokady (konta i adresy IP) – np. po teście bota."""
+    db = get_db()
+    db.execute("UPDATE users SET failed_logins = 0, locked_until = NULL")
+    db.execute("DELETE FROM login_attempts WHERE result != 'ok'")
+    db.commit()
+    click.echo("Zdjęto blokady kont i adresów IP.")
 
 def init_app(app):
     """Podpina bazę pod aplikację (wywoływane w __init__.py)."""
     app.teardown_appcontext(close_db)                          # zamykaj bazę po każdym żądaniu
     app.cli.add_command(init_db_command)                       # dodaj komendę init-db
     app.cli.add_command(reset_password_command)
+    app.cli.add_command(unlock_all_command)                    # MODUŁ 2
