@@ -1,68 +1,246 @@
-/* ===== Kolory i podstawy ===== */
+/* =====================================================================
+   WYGLĄD APLIKACJI „Konta i uprawnienia” (moduł 1 + moduł 2)
+   Plik zawiera tylko wygląd – nie zmienia działania zabezpieczeń.
+   Nazwy klas są takie same jak wcześniej, więc szablony działają bez zmian.
+   ===================================================================== */
+
+/* ===== 1. Kolory (zmieniasz tu – zmienia się cała strona) ===== */
 :root {
-  --bg: #f4f5f7; --surface: #fff; --text: #1d2330; --muted: #677085; --border: #dfe2e8;
-  --primary: #2952cc; --ok: #1e7a46; --ok-bg: #e3f4ea; --bad: #b42318; --bad-bg: #fdecea; --info-bg: #e8eefc;
+  /* Paleta: butelkowa zieleń + róż + miętowy akcent */
+  --bg: #f6f8f6;              /* tło strony – ciepła, jasna szarość z nutą zieleni */
+  --surface: #ffffff;         /* tło kart i tabel */
+  --surface-2: #f4f7f5;       /* jasne tło: pola, wiersze tabel */
+  --text: #13261f;            /* główny tekst – bardzo ciemna zieleń */
+  --muted: #5f7069;           /* tekst pomocniczy */
+  --border: #e1e8e4;          /* ramki */
+  --primary: #db2777;         /* RÓŻ: przyciski, linki, aktywne elementy */
+  --primary-hover: #be185d;
+  --primary-soft: #fdf0f6;
+  --green: #059669;           /* ZIELEŃ: nagłówki, tabele, statusy */
+  --green-soft: #e7f6ef;
+  --accent: linear-gradient(90deg, #10b981, #5eead4 38%, #f9a8d4 62%, #ec4899);   /* pasek: zieleń → róż */
+  --ok: #047857;   --ok-bg: #d1fae5;
+  --warn: #92400e; --warn-bg: #fef3c7;
+  --bad: #b91c1c;  --bad-bg: #fee2e2;
+  --info: #065f46; --info-bg: #e7f6ef;
+  --topbar: #0f2a23;          /* ciemna butelkowa zieleń – górny pasek */
+  --topbar-text: #c5d9d1;
+  --radius: 16px;
+  --shadow: 0 1px 2px rgba(15, 42, 35, .06), 0 10px 30px rgba(15, 42, 35, .08);
+  --ring: 0 0 0 4px rgba(219, 39, 119, .16);   /* różowa obwódka aktywnego pola */
+  --mono: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
 }
+
+/* ===== 2. Podstawy ===== */
 * { box-sizing: border-box; }
-body { margin: 0; font: 15px/1.5 system-ui, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+body {
+  margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+  font: 15px/1.55 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+}
+h1 { font-size: 1.6rem; line-height: 1.25; margin: 0 0 1.1rem; letter-spacing: -.015em; }
+h2 {
+  font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--green);
+  margin: 1.8rem 0 1rem; padding-top: 1.2rem; border-top: 1px solid var(--border);
+}
+h1 + form h2:first-of-type, h1 + h2 { border-top: 0; padding-top: 0; margin-top: .4rem; }
+p { margin: 0 0 .8rem; }
+a { color: var(--primary); text-underline-offset: 2px; }
+a:hover { color: var(--primary-hover); }
+ul { padding-left: 1.2rem; }
+li { margin-bottom: .25rem; }
+.muted { color: var(--muted); font-size: .92rem; }
+::selection { background: #fbcfe8; color: #13261f; }
+:focus-visible { outline: none; box-shadow: var(--ring); border-radius: 6px; }
 
-/* ===== Górny pasek ===== */
-.topbar { background: #1d2330; color: #fff; padding: .7rem 1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-.topbar a { color: #cfd5e3; text-decoration: none; }
-.brand { font-weight: 650; color: #fff !important; }
-.who { margin-left: auto; display: flex; gap: .75rem; align-items: center; }
+/* Nagłówek strony bez karty (Użytkownicy, Dokumenty, Próby logowania) – pionowy akcent */
+.container > h1, .page-head h1 { padding-left: .8rem; border-left: 4px solid; border-image: linear-gradient(#10b981, #5eead4 38%, #f9a8d4 62%, #ec4899) 1; }
+
+/* ===== 3. Górny pasek ===== */
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--topbar); color: #fff;
+  padding: .6rem 1.25rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
+}
+.topbar::after {                       /* cienki kolorowy pasek pod menu */
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--accent);
+}
+.topbar a { color: var(--topbar-text); text-decoration: none; }
+.topbar a:hover { color: #fff; }
+.brand { font-weight: 700; font-size: 1rem; white-space: nowrap; color: #fff !important; display: flex; align-items: center; gap: .6rem; }
+.brand-logo {
+  display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 9px;
+  background: linear-gradient(135deg, #10b981, #5eead4 38%, #f9a8d4 62%, #ec4899); font-size: 1rem;
+  box-shadow: 0 4px 14px rgba(236, 72, 153, .35);
+}
+
+/* Menu: zakładka aktualnej strony jest podświetlona (klasa .active z base.html) */
+nav { display: flex; gap: .15rem; flex-wrap: wrap; }
+nav a { padding: .42rem .7rem; border-radius: 9px; font-size: .93rem; font-weight: 500; }
+nav a:hover { background: rgba(255, 255, 255, .08); }
+nav a.active { background: rgba(236, 72, 153, .22); color: #fff; box-shadow: inset 0 -2px 0 #f472b6; }
+
+.who { margin-left: auto; display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; font-size: .9rem; }
 .who form { margin: 0; }
+.who .btn { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .25); padding: .4rem .9rem; }
+.who .btn:hover { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .45); color: #fff; }
+.user-chip { display: flex; align-items: center; gap: .55rem; color: #fff; font-weight: 600; }
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center;
+  background: linear-gradient(135deg, #10b981, #5eead4 38%, #f9a8d4 62%, #ec4899); color: #fff;
+  font-weight: 700; font-size: .85rem; text-transform: uppercase;
+}
+.user-chip small { display: block; color: var(--topbar-text); font-size: .75rem; font-weight: 400; line-height: 1.1; }
+#idle-timer {
+  color: var(--topbar-text); font-variant-numeric: tabular-nums; font-size: .8rem;
+  background: rgba(255, 255, 255, .06); padding: .2rem .55rem; border-radius: 6px;
+}
+#idle-timer:empty { display: none; }
 
-/* ===== Treść i karty ===== */
-.container { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; max-width: 440px; margin: 2rem auto; }
-.card.wide { max-width: 680px; }
+/* ===== 4. Treść, karty, stopka ===== */
+.container { width: 100%; max-width: 1120px; margin: 0 auto; padding: 2rem 1.5rem 2.5rem; flex: 1; }
+.card {
+  position: relative; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 2rem; max-width: 480px; margin: 1.25rem auto;
+}
+.card::before {                        /* kolorowy pasek na górze każdej karty */
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--accent);
+}
+.card.wide { max-width: 720px; }
+.card > h1:first-child { margin-top: 0; }
 
-/* ===== Formularze ===== */
-label { display: block; font-weight: 550; margin-bottom: .9rem; }
-input, select, textarea { display: block; width: 100%; margin-top: .3rem; padding: .55rem .7rem; font: inherit; border: 1px solid var(--border); border-radius: 8px; }
-.btn { display: inline-block; padding: .5rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: #fff; font: inherit; cursor: pointer; text-decoration: none; color: var(--text); }
-.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; width: 100%; }
+/* Komunikat nad kartą ma tę samą szerokość co karta */
+.container > .alert { max-width: 720px; margin-left: auto; margin-right: auto; }
+.container:has(> .card:not(.wide)) > .alert { max-width: 480px; }
+.container:has(> .page-head) > .alert, .container:has(> .table) > .alert { max-width: none; }
 
-/* ===== Komunikaty ===== */
-.alert { padding: .75rem 1rem; border-radius: 8px; margin-bottom: 1rem; }
-.alert-error { background: var(--bad-bg); color: var(--bad); }
-.alert-success { background: var(--ok-bg); color: var(--ok); }
-.alert-info { background: var(--info-bg); color: #1f3d99; }
-.muted { color: var(--muted); }
+.footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 1.2rem; }
 
-/* ===== Menu, tabele, nagłówek strony ===== */
-nav { display: flex; gap: 1rem; }
-.page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.page-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
 .page-head h1 { margin: 0; }
-.btn-primary-sm { background: var(--primary); border-color: var(--primary); color: #fff; }
-.table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
-.table th, .table td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--border); }
-.table th { font-size: .8rem; text-transform: uppercase; color: var(--muted); }
-label.check { display: flex; gap: .5rem; align-items: center; font-weight: 400; }
-label.check input { width: auto; margin: 0; }
 
+/* ===== 5. Formularze ===== */
+label { display: block; font-weight: 600; font-size: .9rem; margin-bottom: 1.05rem; color: #1f3a30; }
+input, select, textarea {
+  display: block; width: 100%; margin-top: .4rem; padding: .7rem .85rem;
+  font: inherit; font-weight: 400; color: var(--text);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+input:hover, select:hover, textarea:hover { border-color: #c9d6cf; }
+input:focus, select:focus, textarea:focus {
+  outline: none; background: #fff; border-color: var(--primary); box-shadow: var(--ring);
+}
+input::placeholder { color: #9aaba4; }
+textarea { min-height: 160px; resize: vertical; }
+label.check { display: flex; gap: .65rem; align-items: flex-start; font-weight: 400; }
+label.check input { width: 18px; height: 18px; margin: .15rem 0 0; flex: none; accent-color: var(--primary); }
 
-/* ===== Panel administratora ===== */
-.actions { display: flex; gap: .3rem; flex-wrap: wrap; }
+/* ===== 6. Przyciski ===== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  padding: .55rem 1.1rem; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font: inherit; font-weight: 600; font-size: .92rem;
+  cursor: pointer; text-decoration: none; transition: background .15s, border-color .15s, box-shadow .15s, transform .05s;
+}
+.btn:hover { background: var(--green-soft); border-color: #a7dcc4; color: var(--green); }
+.btn:active { transform: translateY(1px); }
+.btn-primary, .btn-primary-sm {
+  background: linear-gradient(135deg, #ec4899, var(--primary)); border-color: var(--primary); color: #fff;
+  box-shadow: 0 6px 18px rgba(219, 39, 119, .28);
+}
+.btn-primary:hover, .btn-primary-sm:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+.btn-primary { width: 100%; padding: .78rem 1rem; margin-top: .5rem; font-size: 1rem; }
+.btn-sm { padding: .3rem .7rem; font-size: .8rem; border-radius: 8px; }
+.btn-danger { color: var(--bad); border-color: #fecaca; }
+.btn-danger:hover { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+
+/* ===== 7. Komunikaty (flash) ===== */
+.alert {
+  padding: .85rem 1rem .85rem 1.1rem; border-radius: 12px; margin-bottom: 1.1rem;
+  border: 1px solid transparent; border-left-width: 5px; font-size: .93rem; font-weight: 500;
+}
+.alert ul { margin: 0; padding-left: 1.1rem; }
+.alert-error   { background: var(--bad-bg);  color: var(--bad);  border-color: #fecaca; border-left-color: var(--bad); }
+.alert-success { background: var(--ok-bg);   color: var(--ok);   border-color: #a7f3d0; border-left-color: var(--ok); }
+.alert-info    { background: var(--info-bg); color: var(--info); border-color: #b7e4cf; border-left-color: var(--green); }
+.alert-warning { background: var(--warn-bg); color: var(--warn); border-color: #fde68a; border-left-color: var(--warn); }
+
+/* ===== 8. Tabele ===== */
+.table {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden; font-size: .93rem;
+}
+.table th, .table td { text-align: left; padding: .8rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table th {
+  background: var(--green-soft); font-size: .72rem; font-weight: 700; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--green);
+}
+.table tbody tr:last-child td { border-bottom: 0; }
+.table tbody tr:nth-child(even) td { background: #fafcfb; }      /* co drugi wiersz lekko szary */
+.table tbody tr:hover td { background: var(--primary-soft); }
+
+/* ===== 9. Panel administratora ===== */
+.actions { display: flex; gap: .35rem; flex-wrap: wrap; }
 .actions form { margin: 0; }
-.btn-sm { padding: .25rem .6rem; font-size: .85rem; }
-.btn-danger { color: var(--bad); border-color: #f2c4bf; }
-.pill { display: inline-block; font-size: .8rem; padding: .1rem .55rem; border-radius: 999px; background: var(--bg); color: var(--muted); }
-.pill-ok { background: var(--ok-bg); color: var(--ok); }
-.pill-warn { background: #fdf1d8; color: #8a5a00; }
-.pill-bad { background: var(--bad-bg); color: var(--bad); }
-.otp { font-family: Consolas, monospace; font-size: 1.6rem; letter-spacing: .1rem; background: var(--bg); border: 1px dashed #b9bfcc; border-radius: 8px; padding: 1rem; }
+.pill {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-size: .75rem; font-weight: 600; padding: .2rem .65rem; border-radius: 999px;
+  background: #eef2f0; color: var(--muted); white-space: nowrap;
+}
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }  /* kropka statusu */
+.pill-ok   { background: var(--ok-bg);   color: var(--ok); }
+.pill-warn { background: var(--warn-bg); color: var(--warn); }
+.pill-bad  { background: var(--bad-bg);  color: var(--bad); }
+.otp {
+  font-family: var(--mono); font-size: 1.6rem; letter-spacing: .12rem; text-align: center; color: var(--primary-hover);
+  background: var(--primary-soft); border: 2px dashed #f9a8d4; border-radius: 12px; padding: 1rem;
+}
 
-/* ===== TOTP ===== */
-.code-input { font-size: 1.4rem; letter-spacing: .3rem; text-align: center; }
-.qr { display: block; margin: 1rem auto; width: 210px; height: 210px; }
-code { font-family: Consolas, monospace; background: var(--bg); padding: .1rem .35rem; border-radius: 4px; word-break: break-all; }
+/* ===== 10. TOTP i kod ===== */
+.code-input { font-family: var(--mono); font-size: 1.4rem; letter-spacing: .35rem; text-align: center; }
+.qr { display: block; margin: 1rem auto; width: 210px; height: 210px; padding: 8px; background: #fff; border-radius: 12px; border: 1px solid var(--border); }
+code { font-family: var(--mono); font-size: .85em; background: var(--green-soft); color: var(--green); padding: .1rem .4rem; border-radius: 6px; word-break: break-all; }
 
-/* ===== MODUŁ 2: CAPTCHA i pułapka ===== */
-.captcha { font-family: Consolas, "Courier New", monospace; font-size: 11px; line-height: 1.1;
-           background: #1d2330; color: #e8eefc; padding: .75rem; border-radius: 8px;
-           overflow-x: auto; margin: .3rem 0 .6rem; user-select: none; }
-/* Pole-pułapka: wysunięte poza ekran (nie display:none – część botów to sprawdza) */
+/* ===== 11. MODUŁ 2: CAPTCHA, pole-pułapka, reCAPTCHA ===== */
+/* CAPTCHA ASCII art – „ekran terminala” */
+.captcha {
+  font-family: var(--mono); font-size: 11px; line-height: 1.15;
+  background: var(--surface-2); color: #0f5132; font-weight: 700;
+  padding: 1rem 1.1rem; margin: .4rem 0 .7rem;
+  border-radius: 12px; border: 1px dashed #b9d3c6; overflow-x: auto; white-space: pre;
+  user-select: none;                /* tekstu nie da się zaznaczyć i skopiować */
+}
+/* POLE-PUŁAPKA: przesunięte poza ekran (NIE display:none – część botów to wykrywa).
+   Tej reguły nie zmieniaj, bo człowiek zobaczy pole i honeypot przestanie działać. */
 .hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
-.g-recaptcha { margin: .5rem 0 1rem; }
+.g-recaptcha { margin: .6rem 0 1rem; min-height: 78px; }
+
+/* ===== 12. Strona logowania (jasne tło z delikatną pastelową poświatą) ===== */
+body.auth-page {
+  background:
+    radial-gradient(700px 420px at 0% 0%, rgba(16, 185, 129, .10), transparent 70%),
+    radial-gradient(700px 420px at 100% 100%, rgba(236, 72, 153, .09), transparent 70%),
+    var(--bg);
+}
+body.auth-page .card { margin-top: 2.5rem; box-shadow: 0 1px 2px rgba(15, 42, 35, .05), 0 18px 40px rgba(15, 42, 35, .08); }
+body.auth-page .btn-primary { box-shadow: 0 4px 12px rgba(219, 39, 119, .18); }
+.auth-head { text-align: center; margin-bottom: 1.5rem; }
+.auth-head .brand-logo { width: 46px; height: 46px; font-size: 1.25rem; border-radius: 12px; margin-bottom: .7rem; box-shadow: none; }
+.auth-head h1 { margin-bottom: .25rem; }
+.auth-head p { color: var(--muted); margin: 0; font-size: .92rem; }
+.field-hint { display: block; font-weight: 400; color: var(--muted); font-size: .8rem; margin-top: .35rem; }
+#lock-timer { font-variant-numeric: tabular-nums; }
+
+/* ===== 13. Telefon i wąskie okna ===== */
+@media (max-width: 720px) {
+  .topbar { padding: .65rem 1rem; gap: .6rem; position: static; }
+  .who { margin-left: 0; width: 100%; justify-content: space-between; }
+  .container { padding: 1.1rem; }
+  .card { padding: 1.4rem; margin: .75rem auto; }
+  .table { display: block; overflow-x: auto; white-space: nowrap; }   /* tabelę można przewinąć w bok */
+  .table .actions { flex-wrap: nowrap; }
+  h1 { font-size: 1.35rem; }
+}

@@ -1,9 +1,15 @@
 {% extends "base.html" %}  {# dziedziczy wygląd z base.html #}
 {% block title %}Logowanie{% endblock %}
+{% block body_class %}auth-page{% endblock %}  {# ciemne tło tylko na stronie logowania #}
 
 {% block content %}
-<section class="card wide">
-  <h1>Logowanie</h1>
+<section class="card">
+  <!-- Nagłówek z logo (tylko wygląd) -->
+  <div class="auth-head">
+    <span class="brand-logo">🔐</span>
+    <h1>Logowanie</h1>
+    <p>Zaloguj się, aby przejść do systemu</p>
+  </div>
 
   {% if lock_seconds %}
     <!-- Blokada konta: odliczanie pozostałego czasu (app.js) -->
@@ -35,13 +41,14 @@
     </div>
 
     <!-- CAPTCHA wariant 5: liczba narysowana znakami ASCII -->
-    <label>Przepisz cyfry z obrazka (ważne 2 minuty)</label>
+    <label for="captcha_answer">Przepisz cyfry z obrazka</label>
     <pre class="captcha" aria-label="Kod CAPTCHA w postaci ASCII art">{{ captcha_art }}</pre>
     <input type="hidden" name="captcha_id" value="{{ captcha_id }}">
-    <input type="text" name="captcha_answer" inputmode="numeric" maxlength="10"
+    <input type="text" id="captcha_answer" name="captcha_answer" inputmode="numeric" maxlength="10"
            autocomplete="off" required placeholder="np. 12345">
+    <span class="field-hint">Kod jest jednorazowy i ważny 2 minuty. Po błędzie pojawi się nowy.</span>
 
-    <button class="btn btn-primary" type="submit" style="margin-top: 1rem">Zaloguj</button>
+    <button class="btn btn-primary" type="submit" style="margin-top: 1.2rem">Zaloguj</button>
   </form>
 </section>
 {% endblock %}

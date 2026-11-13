@@ -6,28 +6,46 @@
   <!-- block title = miejsce na tytuł; każda strona wpisze tu swój -->
   <title>{% block title %}{% endblock %} · Konta i uprawnienia</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- ikonka karty przeglądarki (kłódka) bez osobnego pliku -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
 </head>
-<body{% if g.user %} data-idle-seconds="{{ g.idle_seconds }}" data-timeout-url="{{ url_for('auth.login', timeout=1) }}"{% endif %}>
-<header class="topbar">
-  <a class="brand" href="/">🔐 Konta i uprawnienia</a>
-    {% if g.user %}
-  <nav>
-    <a href="{{ url_for('main.index') }}">Pulpit</a>
-    <!-- link tylko dla ról z uprawnieniem (wygoda – ochrona jest na serwerze) -->
-    {% if can('docs.read_public') %}<a href="{{ url_for('docs.index') }}">Dokumenty</a>{% endif %}
-        {% if can('users.view') %}<a href="{{ url_for('admin.users') }}">Użytkownicy</a>{% endif %}
-    {% if can('settings.manage') %}<a href="{{ url_for('admin.settings') }}">Ustawienia</a>{% endif %}
-        {% if can('users.view') %}<a href="{{ url_for('admin.attempts') }}">Próby logowania</a>{% endif %}
+<body class="{% block body_class %}{% endblock %}"{% if g.user %} data-idle-seconds="{{ g.idle_seconds }}" data-timeout-url="{{ url_for('auth.login', timeout=1) }}"{% endif %}>
 
+{# ep = nazwa aktualnego widoku, np. "admin.users" – służy do podświetlenia zakładki w menu #}
+{% set ep = request.endpoint or "" %}
+
+<header class="topbar">
+  <a class="brand" href="/"><span class="brand-logo">🔐</span> Konta i uprawnienia</a>
+
+  {% if g.user %}
+  <nav>
+    <a href="{{ url_for('main.index') }}" class="{{ 'active' if ep == 'main.index' }}">Pulpit</a>
+    <!-- link tylko dla ról z uprawnieniem (wygoda – ochrona jest na serwerze) -->
+    {% if can('docs.read_public') %}
+      <a href="{{ url_for('docs.index') }}" class="{{ 'active' if ep.startswith('docs.') }}">Dokumenty</a>
+    {% endif %}
+    {% if can('users.view') %}
+      <a href="{{ url_for('admin.users') }}" class="{{ 'active' if ep.startswith('admin.user') }}">Użytkownicy</a>
+    {% endif %}
+    {% if can('settings.manage') %}
+      <a href="{{ url_for('admin.settings') }}" class="{{ 'active' if ep == 'admin.settings' }}">Ustawienia</a>
+    {% endif %}
+    {% if can('users.view') %}
+      <!-- MODUŁ 2: rejestr prób logowania -->
+      <a href="{{ url_for('admin.attempts') }}" class="{{ 'active' if ep == 'admin.attempts' }}">Próby logowania</a>
+    {% endif %}
   </nav>
-  {% endif %}
-    {% if g.user %}
+
   <div class="who">
-    <span>{{ g.user.login }} ({{ g.user.role_name }})</span>
-    <span id="idle-timer" class="muted"></span>   <!-- licznik do wylogowania -->
-    <!-- Wylogowanie to formularz POST z tokenem CSRF, a nie zwykły link -->
+    <!-- inicjał loginu w kółku + login i rola -->
+    <span class="user-chip">
+      <span class="avatar">{{ g.user.login[:1] }}</span>
+      <span>{{ g.user.login }}<small>{{ g.user.role_name }}</small></span>
+    </span>
+    <span id="idle-timer"></span>   <!-- licznik do wylogowania (app.js) -->
     <a href="{{ url_for('account.change_password') }}">Zmień hasło</a>
-        <a href="{{ url_for('account.twofa') }}">2FA</a>
+    <a href="{{ url_for('account.twofa') }}">2FA</a>
+    <!-- Wylogowanie to formularz POST z tokenem CSRF, a nie zwykły link -->
     <form method="post" action="{{ url_for('auth.logout') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn" type="submit">Wyloguj</button>
@@ -40,13 +58,15 @@
   <!-- Komunikaty z flash(), np. "Login lub hasło niepoprawne" -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{{ message }}</div>
+      <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
     {% endfor %}
   {% endwith %}
 
   <!-- block content = miejsce na treść konkretnej strony -->
   {% block content %}{% endblock %}
 </main>
+
+<footer class="footer">Cyberbezpieczeństwo · laboratorium · UBB</footer>
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>
