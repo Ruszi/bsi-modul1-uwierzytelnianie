@@ -2,7 +2,7 @@ import os
 import secrets
 from pathlib import Path
 
-from flask import Flask, g, render_template
+from flask import Flask, g, render_template, request
 from flask_wtf.csrf import CSRFProtect
 
 csrf = CSRFProtect()   # ochrona formularzy przed atakiem CSRF
@@ -50,6 +50,9 @@ def create_app():
     # ===== Własne strony błędów =====
     @app.errorhandler(403)
     def forbidden(_e):
+                # MODUŁ 3: każda odmowa dostępu trafia do dziennika (reguła: >=3 w 10 min -> alert)
+        from .audit import FAILURE, log_event
+        log_event("ACCESS_DENIED", f"Brak uprawnień: {request.method} {request.path}", FAILURE)
         return render_template("error.html", code=403, title="Brak uprawnień",
                                message="Twoja rola nie ma uprawnień do tego zasobu."), 403
 

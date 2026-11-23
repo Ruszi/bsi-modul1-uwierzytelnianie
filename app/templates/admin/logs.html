@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Dziennik zdarzeń{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Dziennik zdarzeń bezpieczeństwa</h1>
+  <div class="actions">
+    <!-- eksport z TYMI SAMYMI filtrami co na ekranie -->
+    <a class="btn btn-primary-sm" href="{{ url_for('admin.logs_export', **f) }}">Eksportuj do JSON</a>
+    {% if can('logs.verify') %}<a class="btn" href="{{ url_for('admin.logs_verify') }}">Weryfikacja integralności</a>{% endif %}
+    <a class="btn" href="{{ url_for('admin.alerts') }}">Alerty</a>
+  </div>
+</div>
+
+<!-- Filtr: formularz GET (tylko odczyt, więc bez tokenu CSRF) -->
+<form method="get" class="filters">
+  <label>Użytkownik
+    <input type="text" name="user" value="{{ f.user }}" placeholder="np. jkowalski">
+  </label>
+  <label>Typ zdarzenia
+    <select name="action">
+      <option value="">— wszystkie —</option>
+      {% for code, label in types.items() %}
+        <option value="{{ code }}" {% if f.action == code %}selected{% endif %}>{{ label }} ({{ code }})</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Data od
+    <input type="date" name="date_from" value="{{ f.date_from }}">
+  </label>
+  <label>Data do
+    <input type="date" name="date_to" value="{{ f.date_to }}">
+  </label>
+  <div class="filter-buttons">
+    <button class="btn btn-primary-sm" type="submit">Filtruj</button>
+    <a class="btn" href="{{ url_for('admin.logs') }}">Wyczyść</a>
+  </div>
+</form>
+
+<p class="muted">Znaleziono {{ total }} wpisów{% if total > 500 %} – pokazano 500 najnowszych{% endif %}.
+  Czas w UTC. Wpisów nie można edytować ani usuwać z poziomu aplikacji.</p>
+
+<table class="table">
+  <thead>
+    <tr><th>Nr</th><th>Czas (UTC)</th><th>Użytkownik</th><th>Adres IP</th><th>Zdarzenie</th><th>Opis</th><th>Wynik</th></tr>
+  </thead>
+  <tbody>
+  {% for e in rows %}
+    <tr>
+      <td>{{ e.id }}</td>
+      <td style="white-space: nowrap">{{ e.timestamp[:19].replace("T", " ") }}</td>
+      <td>{{ e.user }}</td>
+      <td>{{ e.ip }}</td>
+      <td><code>{{ e.action }}</code></td>
+      <td>{{ e.description }}</td>   {# Jinja2 zamienia < > na &lt; &gt; – brak XSS z dziennika #}
+      <td><span class="pill {{ 'pill-ok' if e.result == 'sukces' else 'pill-bad' }}">{{ e.result }}</span></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="muted">Brak wpisów dla wybranych filtrów.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

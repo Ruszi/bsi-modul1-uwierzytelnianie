@@ -8,6 +8,9 @@ from .security import (check_password_policy, new_totp_secret, totp_uri,
                        verify_password, verify_totp)
 from .users import previous_hashes, set_password
 from .protection import verify_recaptcha
+from .audit import FAILURE, log_event        # MODUŁ 3: dziennik zdarzeń
+import re
+
 bp = Blueprint("account", __name__, url_prefix="/account")
 
 
@@ -16,6 +19,10 @@ def _policy():
     return {"min_length": get_setting("min_length", int),
             "hibp": get_setting("hibp_enabled", bool)}
 
+
+def _log_reasons(errors):
+    """MODUŁ 3: powody odrzucenia do dziennika – bez długości hasła (to też informacja o haśle)."""
+    return "; ".join(re.sub(r" \(obecnie: \d+\)", "", e) for e in errors)
 
 def _validate_new_password(user, new_password, repeated):
     """Wspólne sprawdzenie nowego hasła dla obu formularzy."""
@@ -52,8 +59,13 @@ def required_change():
             set_password(db, g.user["id"], request.form["new_password"],
                          keep_session_hash=current_session_hash())
             db.commit()
+            log_event("PASSWORD_CHANGE", "Wymuszona zmiana hasła zakończona")
             flash("Hasło zostało ustawione.", "success")
             return redirect(url_for("main.index"))
+        else:
+            # zapisujemy POWÓD odrzucenia, nigdy samo hasło
+            log_event("PASSWORD_CHANGE", "Nieudana wymuszona zmiana hasła: " + _log_reasons(errors), FAILURE)
+    return render_template("account/required.html", reason=reason, errors=errors, policy=_policy())
     return render_template("account/required.html", reason=reason, errors=errors, policy=_policy())
 
 
@@ -76,10 +88,12 @@ def change_password():
             set_password(db, g.user["id"], request.form["new_password"],
                          keep_session_hash=current_session_hash())
             db.commit()
+            log_event("PASSWORD_CHANGE", "Zmiana hasła – pozostałe sesje zakończone")
             flash("Hasło zostało zmienione. Pozostałe sesje tego konta zostały zakończone.", "success")
             return redirect(url_for("main.index"))
+        else:
+            log_event("PASSWORD_CHANGE", "Nieudana zmiana hasła: " + _log_reasons(errors), FAILURE)
     return render_template("account/password.html", errors=errors, policy=_policy())
-
 
 # ===================== WERYFIKACJA DWUETAPOWA (TOTP) =====================
 
@@ -120,6 +134,7 @@ def twofa_confirm():
         db = get_db()
         db.execute("UPDATE users SET totp_enabled = 1, totp_last_step = ? WHERE id = ?", (step, g.user["id"]))
         db.commit()
+        log_event("MFA_CHANGE", "Włączono weryfikację dwuetapową (TOTP)")
         flash("Weryfikacja dwuetapowa została włączona.", "success")
     return redirect(url_for("account.twofa"))
 
@@ -144,11 +159,13 @@ def twofa_disable():
     if g.user["totp_enabled"]:
         step = verify_totp(g.user["totp_secret"], request.form.get("code", ""), g.user["totp_last_step"])
     if not password_ok or step is None:
+        log_event("MFA_CHANGE", "Nieudana próba wyłączenia 2FA (złe hasło lub kod)", FAILURE)
         flash("Niepoprawne hasło lub kod weryfikacyjny.", "error")
     else:
         db = get_db()
         db.execute("UPDATE users SET totp_secret = NULL, totp_enabled = 0, totp_last_step = NULL WHERE id = ?",
                    (g.user["id"],))
         db.commit()
+        log_event("MFA_CHANGE", "Wyłączono weryfikację dwuetapową")
         flash("Weryfikacja dwuetapowa została wyłączona.", "info")
     return redirect(url_for("account.twofa"))

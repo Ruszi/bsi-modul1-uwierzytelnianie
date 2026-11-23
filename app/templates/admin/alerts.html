@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Alerty{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Alerty bezpieczeństwa</h1>
+  <a class="btn" href="{{ url_for('admin.logs', action='ALERT') }}">Alerty w dzienniku</a>
+</div>
+<p class="muted">Kanał alertów (wariant 5): osobny plik <code>instance/alerts.jsonl</code>.
+  Reguły: ≥5 nieudanych logowań na jedno konto w 5 min · ≥3 odmowy dostępu dla jednego użytkownika w 10 min.</p>
+
+<table class="table">
+  <thead><tr><th>Czas (UTC)</th><th>Reguła</th><th>Użytkownik</th><th>Adres IP</th><th>Szczegóły</th><th>Wpis w dzienniku</th></tr></thead>
+  <tbody>
+  {% for a in alerts %}
+    <tr>
+      <td style="white-space: nowrap">{{ a.timestamp[:19].replace("T", " ") }}</td>
+      <td><span class="pill pill-bad">{{ a.rule }}</span></td>
+      <td>{{ a.user }}</td>
+      <td>{{ a.ip }}</td>
+      <td>{{ a.details }}</td>
+      <td>nr {{ a.log_entry }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">Brak alertów.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -244,3 +244,10 @@ body.auth-page .btn-primary { box-shadow: 0 4px 12px rgba(219, 39, 119, .18); }
   .table .actions { flex-wrap: nowrap; }
   h1 { font-size: 1.35rem; }
 }
+/* ===== 14. MODUŁ 3: filtr dziennika ===== */
+.filters {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0 1rem; align-items: end;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 1.1rem 1.25rem .2rem; margin-bottom: 1rem;
+}
+.filter-buttons { display: flex; gap: .5rem; margin-bottom: 1.05rem; }

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Weryfikacja dziennika{% endblock %}
+
+{% block content %}
+<section class="card wide">
+  <h1>Weryfikacja integralności dziennika</h1>
+  <p>Aplikacja liczy od nowa skrót <strong>SHA-256 całego pliku dziennika</strong> i porównuje go
+     ze skrótami zapisanymi po każdym wpisie w osobnym pliku <code>security_log.sha256</code>.
+     Każda zmiana, usunięcie albo dopisanie wpisu poza aplikacją zmienia skrót.</p>
+
+  {% if result %}
+    {% if result.ok %}
+      <div class="alert alert-success"><strong>{{ result.message }}</strong></div>
+    {% else %}
+      <div class="alert alert-error"><strong>{{ result.message }}</strong>
+        {% if result.bad_entry %}<br>Sprawdź wpis nr {{ result.bad_entry }} w pliku security_log.jsonl.{% endif %}
+      </div>
+    {% endif %}
+  {% endif %}
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-primary" type="submit">Sprawdź cały dziennik</button>
+  </form>
+  <p class="muted" style="margin-top: 1rem">Wynik weryfikacji również zapisuje się w dzienniku (LOG_VERIFY).</p>
+  <p><a href="{{ url_for('admin.logs') }}">← Wróć do dziennika</a></p>
+</section>
+{% endblock %}

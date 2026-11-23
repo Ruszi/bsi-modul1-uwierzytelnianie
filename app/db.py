@@ -22,12 +22,15 @@ PERMISSIONS = {
     "docs.read_all": "Odczyt wszystkich dokumentów",
     "docs.create": "Tworzenie dokumentów",
     "docs.edit_own": "Edycja własnych dokumentów",
+        # --- MODUŁ 3 ---
+    "logs.view": "Przeglądanie i eksport dziennika zdarzeń, podgląd alertów",
+    "logs.verify": "Weryfikacja integralności dziennika",
 }
 
 # Macierz uprawnień: która rola dostaje które uprawnienia
 # (zasada najmniejszych uprawnień: każdy ma tylko to, czego potrzebuje)
 ROLE_PERMISSIONS = {
-    "Administrator": ["users.view", "users.manage", "settings.manage"],
+    "Administrator": ["users.view", "users.manage", "settings.manage", "logs.view", "logs.verify"],
     "Pracownik": ["docs.read_public", "docs.read_all", "docs.create", "docs.edit_own"],
     "Gość": ["docs.read_public"],
 }
@@ -176,6 +179,8 @@ def reset_password_command(login):
         raise click.ClickException("Nie ma takiego konta.")
     password, expires = issue_one_time_password(db, user["id"])   # nowe hasło + wylogowanie
     db.commit()
+    from .audit import log_event
+    log_event("PASSWORD_RESET", f"Nadano nowe hasło jednorazowe kontu {login} (komenda w terminalu)", user="terminal")
     click.echo(f"Nowe hasło jednorazowe dla {login}: {password} (ważne do {expires:%Y-%m-%d %H:%M} UTC)")
 @click.command("unlock-all")
 def unlock_all_command():
@@ -186,9 +191,26 @@ def unlock_all_command():
     db.commit()
     click.echo("Zdjęto blokady kont i adresów IP.")
 
+@click.command("update-permissions")
+def update_permissions_command():
+    """MODUŁ 3: dopisuje nowe uprawnienia do istniejącej bazy (bez kasowania kont i haseł)."""
+    db = get_db()
+    for code, description in PERMISSIONS.items():
+        db.execute("INSERT OR IGNORE INTO permissions (code, description) VALUES (?, ?)", (code, description))
+    for role, codes in ROLE_PERMISSIONS.items():
+        for code in codes:
+            db.execute(
+                "INSERT OR IGNORE INTO role_permissions (role_id, permission_id) "
+                "SELECT r.id, p.id FROM roles r, permissions p WHERE r.name = ? AND p.code = ?",
+                (role, code),
+            )
+    db.commit()
+    click.echo("Uprawnienia zaktualizowane.")
+
 def init_app(app):
     """Podpina bazę pod aplikację (wywoływane w __init__.py)."""
     app.teardown_appcontext(close_db)                          # zamykaj bazę po każdym żądaniu
     app.cli.add_command(init_db_command)                       # dodaj komendę init-db
     app.cli.add_command(reset_password_command)
     app.cli.add_command(unlock_all_command)                    # MODUŁ 2
+    app.cli.add_command(update_permissions_command)            # MODUŁ 3

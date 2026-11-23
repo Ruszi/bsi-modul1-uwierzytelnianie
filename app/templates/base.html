@@ -34,6 +34,10 @@
       <!-- MODUŁ 2: rejestr prób logowania -->
       <a href="{{ url_for('admin.attempts') }}" class="{{ 'active' if ep == 'admin.attempts' }}">Próby logowania</a>
     {% endif %}
+        {% if can('logs.view') %}
+      <!-- MODUŁ 3: dziennik zdarzeń, weryfikacja i alerty -->
+      <a href="{{ url_for('admin.logs') }}" class="{{ 'active' if ep in ('admin.logs', 'admin.logs_verify', 'admin.alerts') }}">Dziennik</a>
+    {% endif %}
   </nav>
 
   <div class="who">

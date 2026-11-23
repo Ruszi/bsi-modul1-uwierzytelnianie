@@ -14,6 +14,7 @@ from .protection import (LOCKOUT_MINUTES, account_lock_remaining, check_captcha,
                          honeypot_triggered, ip_block_remaining, is_canary_login, new_captcha,
                          record_attempt, register_failed_login, reset_failed_logins,
                          trigger_canary)
+from .audit import FAILURE, log_event        # MODUŁ 3: dziennik zdarzeń
 
 bp = Blueprint("auth", __name__)
 
@@ -228,6 +229,7 @@ def login():
     ip_wait = ip_block_remaining()
     if ip_wait:
         record_attempt(login_value, "ip_limit")
+        log_event("LOGIN_FAILED", "Przekroczony limit prób z adresu IP (HTTP 429)", FAILURE, user=login_value)
         flash(f"Zbyt wiele nieudanych prób z Twojego adresu IP. "
               f"Spróbuj ponownie za {ip_wait // 60 + 1} min.", "error")
         return _login_page(login_value, 429)            # 429 Too Many Requests
@@ -235,12 +237,14 @@ def login():
     # --- 2. Pułapka na boty: ukryte pole wypełnione = bot ---
     if honeypot_triggered():
         record_attempt(login_value, "honeypot")
+        log_event("LOGIN_FAILED", "Wypełnione pole-pułapka – prawdopodobnie bot", FAILURE, user=login_value)
         flash(GENERIC_LOGIN_ERROR, "error")             # NIE zdradzamy botowi, że wpadł
         return _login_page(login_value)
 
     # --- 3. CAPTCHA (jednorazowa, ważna 2 minuty) ---
     if not check_captcha(request.form.get("captcha_id"), request.form.get("captcha_answer")):
         record_attempt(login_value, "captcha")
+        log_event("LOGIN_FAILED", "Zły lub nieważny kod CAPTCHA", FAILURE, user=login_value)
         flash("Niepoprawny lub nieważny kod CAPTCHA. Przepisz nowy kod.", "error")
         return _login_page(login_value)
 
@@ -249,6 +253,7 @@ def login():
         verify_password(DUMMY_HASH, password)           # ten sam czas odpowiedzi
         trigger_canary(login_value)
         record_attempt(login_value, "canary")
+        log_event("CANARY_LOGIN", "Próba logowania na konto-pułapkę – wysłano alert Canarytokens", FAILURE, user=login_value)
         flash(GENERIC_LOGIN_ERROR, "error")
         return _login_page(login_value)
 
@@ -260,6 +265,7 @@ def login():
         lock = account_lock_remaining(user)
         if lock:
             record_attempt(login_value, "locked")
+            log_event("LOGIN_FAILED", "Próba logowania na czasowo zablokowane konto", FAILURE, user=login_value)
             g.lock_seconds = lock
             flash("Konto jest czasowo zablokowane po zbyt wielu błędnych próbach logowania.", "error")
             return _login_page(login_value)
@@ -268,12 +274,16 @@ def login():
     if user is None:
         verify_password(DUMMY_HASH, password)
         record_attempt(login_value, "unknown_user")
+        log_event("LOGIN_FAILED", "Nieistniejący login", FAILURE, user=login_value)
         flash(GENERIC_LOGIN_ERROR, "error")
         return _login_page(login_value)
 
     if not verify_password(user["password_hash"], password):
         record_attempt(login_value, "bad_password")
+        log_event("LOGIN_FAILED", "Błędne hasło", FAILURE, user=login_value)   # samego hasła NIE zapisujemy!
         if register_failed_login(user):                 # właśnie przekroczono limit
+            log_event("ACCOUNT_LOCKED", f"Konto zablokowane na {LOCKOUT_MINUTES} min po zbyt wielu błędnych hasłach",
+                      FAILURE, user=login_value)
             g.lock_seconds = LOCKOUT_MINUTES * 60
             flash(f"Zbyt wiele błędnych prób. Konto zablokowano na {LOCKOUT_MINUTES} minut.", "error")
         else:
@@ -285,11 +295,13 @@ def login():
     record_attempt(login_value, "ok")
 
     if user["is_blocked"]:
+        log_event("LOGIN_FAILED", "Logowanie na konto zablokowane przez administratora", FAILURE, user=login_value)
         flash("Konto jest zablokowane. Skontaktuj się z administratorem.", "error")
         return _login_page(login_value)
 
     expires = from_iso(user["one_time_expires_at"])
     if expires and now() > expires:
+        log_event("LOGIN_FAILED", "Wygasło hasło jednorazowe", FAILURE, user=login_value)
         flash("Hasło jednorazowe wygasło. Poproś administratora o nowe.", "error")
         return _login_page(login_value)
 
@@ -302,10 +314,11 @@ def login():
     end_current_session()
     if user["totp_enabled"]:                        # 2FA włączone -> najpierw kod
         start_session(user["id"], "mfa")
+        log_event("LOGIN_SUCCESS", "Hasło poprawne – oczekiwanie na kod 2FA", user=login_value)
         return redirect(url_for("auth.login_totp"))
     start_session(user["id"], "full")               # bez 2FA -> od razu pulpit
+    log_event("LOGIN_SUCCESS", "Zalogowano (hasło)", user=login_value)
     return redirect(url_for("main.index"))
-
 
 @bp.route("/login/totp", methods=["GET", "POST"])
 def login_totp():
@@ -319,6 +332,7 @@ def login_totp():
         step = verify_totp(user["totp_secret"], request.form.get("code", ""), user["totp_last_step"])
         if step is None:                            # zły kod
             attempts = g.session_row["mfa_attempts"] + 1
+            log_event("LOGIN_FAILED", f"Błędny kod 2FA (próba {attempts})", FAILURE, user=user["login"])
             if attempts >= MAX_MFA_ATTEMPTS:        # limit prób -> koniec sesji
                 end_current_session()
                 flash("Zbyt wiele błędnych kodów. Zaloguj się ponownie.", "error")
@@ -332,6 +346,7 @@ def login_totp():
             db.commit()
             end_current_session()                   # sesja 'mfa' -> usunięta
             start_session(user["id"], "full")       # NOWY token dla pełnej sesji
+            log_event("LOGIN_SUCCESS", "Zalogowano (hasło + kod 2FA)", user=user["login"])
             return redirect(url_for("main.index"))
 
     return render_template("login_totp.html")
@@ -339,6 +354,8 @@ def login_totp():
 
 @bp.post("/logout")                                 # tylko POST z tokenem CSRF
 def logout():
+    if g.user is not None:
+        log_event("LOGOUT", "Wylogowanie")
     end_current_session()
     flash("Wylogowano.", "info")
     return redirect(url_for("auth.login"))

@@ -66,3 +66,23 @@ Plik `instance/config.py`:
 Bez tego pliku używane są testowe klucze Google.
 
 Po zmianach w bazie: `flask --app app init-db`. Zdjęcie wszystkich blokad: `flask --app app unlock-all`.
+
+# Moduł 3 – Monitorowanie i rejestrowanie zdarzeń bezpieczeństwa (wariant 5)
+
+| Wymaganie | Realizacja |
+|---|---|
+| Format zapisu | plik JSON (JSON Lines) – `instance/security_log.jsonl`, jeden wpis = jedna linia |
+| Pola wpisu | id, timestamp (UTC), user, ip, action, description, result |
+| Integralność | SHA-256 całego pliku liczony po każdym wpisie i zapisywany w `instance/security_log.sha256` |
+| Reguła wspólna | ≥5 nieudanych logowań na jedno konto w 5 min |
+| Reguła wariantu 5 | ≥3 odmowy dostępu dla jednego użytkownika w 10 min |
+| Kanał alertu | osobny plik `instance/alerts.jsonl` + strona *Alerty* |
+| Dostęp | tylko Administrator (uprawnienia `logs.view`, `logs.verify`) |
+
+Kod: `app/audit.py` (zapis, odczyt, weryfikacja, reguły). Strony: `/admin/logs` (filtr i eksport JSON),
+`/admin/logs/verify` (weryfikacja integralności), `/admin/alerts`.
+
+Po aktualizacji z modułu 2: `flask --app app update-permissions` (dopisuje nowe uprawnienia bez kasowania kont).
+
+Pliki dziennika leżą w `instance/` i nie trafiają do repozytorium. W dzienniku nie zapisuje się haseł,
+dane od użytkownika są czyszczone (ochrona przed log injection), a aplikacja nie ma funkcji edycji ani usuwania wpisów.
